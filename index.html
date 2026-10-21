@@ -177,6 +177,7 @@ button.btn.danger { color: var(--danger); }
         <button type="button" class="btn ptrim" disabled>トリミング・回転</button>
       </div>
       <label class="f"><span>名前 <small>（必須）</small></span><input type="text" id="name" maxlength="30" placeholder="例：山田 花子"></label>
+      <label class="f">フリガナ<input type="text" id="kana" maxlength="40" placeholder="例：ヤマダ ハナコ"></label>
       <div class="row3">
         <label class="f">年齢<input type="text" id="age" inputmode="numeric" maxlength="3" placeholder="例：42"></label>
         <label class="f">地域<input type="text" id="area" maxlength="30" placeholder="例：埼玉県さいたま市"></label>
@@ -184,7 +185,7 @@ button.btn.danger { color: var(--danger); }
       </div>
       <div class="row2">
         <label class="f">家族構成<input type="text" id="family" maxlength="50" placeholder="例：夫・子ども2人（中学生・小学生）"></label>
-        <label class="f">登録日<input type="date" id="date"></label>
+        <label class="f">登録日<input type="text" id="date" maxlength="20" placeholder="例：2026.10.21"></label>
       </div>
       <div class="check-row"><span>つなぎ</span>
         <div class="seg" aria-label="つなぎ">
@@ -319,7 +320,7 @@ button.btn.danger { color: var(--danger); }
   const PRESETS = ['#2f6fed', '#e2546b', '#f08a24', '#2a9d6f', '#7b5cd6', '#3a4256'];
   const TSUNAGI = ['宮', '吉', '佐', '矢'];
   const PBS = ['青P', '石P', '古P', '岩P'];
-  const TEXT_IDS = ['name', 'age', 'area', 'job', 'family', 'needs', 'character', 'reason', 'other', 'introducer', 'group', 'introAge', 'introArea', 'introJob'];
+  const TEXT_IDS = ['name', 'kana', 'date', 'age', 'area', 'job', 'family', 'needs', 'character', 'reason', 'other', 'introducer', 'group', 'introAge', 'introArea', 'introJob'];
 
   const state = { color: PRESETS[0], photos: { member: newPhoto(), intro: newPhoto() } };
   // orig: 元画像 / rot: 回転（90°単位）/ src: 回転後の画像 / crop: src 上の正方形の切り抜き範囲
@@ -354,7 +355,6 @@ button.btn.danger { color: var(--danger); }
   function data() {
     const d = {};
     TEXT_IDS.forEach((id) => { d[id] = val(id); });
-    d.date = val('date');
     d.tsunagi = checks('tsunagi'); d.pbs = checks('pbs');
     d.tpl = radio('tpl'); d.size = radio('size'); d.font = radio('font');
     return d;
@@ -564,6 +564,7 @@ button.btn.danger { color: var(--danger); }
       let ly = top;
       if (L.draw) drawPhoto('member', pad + (lw - dd) / 2, ly, dd, L.col, .012 * U);
       ly += dd + .03 * U;
+      ly += L.text(pad, ly, lw, d.kana, .024, 700, L.col.muted, 1.4, 'center', .1);
       ly += L.text(pad, ly, lw, d.name, nameSize(L, d.name, lw, .066), 900, L.col.name, 1.25, 'center');
       ly += .025 * U;
       ly += infoGrid(L, pad, ly, lw, 2, d, 'center');
@@ -582,14 +583,16 @@ button.btn.danger { color: var(--danger); }
     const tx = pad + dd + .05 * U, tw = W - pad - tx;
     const ghost = makeL(false, L.s, L.u, L.fam, L.col);
     const ns = nameSize(L, d.name, tw, .072);
-    const nameH = ghost.text(tx, 0, tw, d.name, ns, 900, L.col.name, 1.25);
+    const kanaH = ghost.text(tx, 0, tw, d.kana, .024, 700, L.col.muted, 1.4, 'left', .1);
+    const nameH = kanaH + ghost.text(tx, 0, tw, d.name, ns, 900, L.col.name, 1.25);
     const infoH = infoGrid(ghost, tx, 0, tw, 2, d);
     const rightH = nameH + (infoH ? .025 * U + infoH : 0);
     const heroH = Math.max(dd, rightH);
     if (L.draw) {
       drawPhoto('member', pad, top + (heroH - dd) / 2, dd, L.col, .012 * U);
       const ry = top + (heroH - rightH) / 2;
-      L.text(tx, ry, tw, d.name, ns, 900, L.col.name, 1.25);
+      L.text(tx, ry, tw, d.kana, .024, 700, L.col.muted, 1.4, 'left', .1);
+      L.text(tx, ry + kanaH, tw, d.name, ns, 900, L.col.name, 1.25);
       infoGrid(L, tx, ry + nameH + .025 * U, tw, 2, d);
     }
     let y = top + heroH + .04 * U;
@@ -623,9 +626,8 @@ button.btn.danger { color: var(--danger); }
     const HL = makeL(true, 1, u, fam, col);
     HL.text(pad, hh / 2 - .021 * u, W / 2, 'MEMBER PROFILE', .028, 900, fg, 1.5, 'left', .2);
     if (d.date) {
-      const [yy, mm, dd] = d.date.split('-');
       ctx.globalAlpha = .85;
-      HL.text(W / 2, hh / 2 - .021 * u, W / 2 - pad, '登録日  ' + yy + '.' + mm + '.' + dd, .028, 700, fg, 1.5, 'right');
+      HL.text(W / 2, hh / 2 - .021 * u, W / 2 - pad, '登録日  ' + d.date, .028, 700, fg, 1.5, 'right');
       ctx.globalAlpha = 1;
     }
 
@@ -808,16 +810,12 @@ button.btn.danger { color: var(--danger); }
   $('#form').addEventListener('change', edited);
   $('#form').addEventListener('submit', (e) => e.preventDefault());
 
-  const today = () => { const t = new Date(), z = (n) => String(n).padStart(2, '0'); return t.getFullYear() + '-' + z(t.getMonth() + 1) + '-' + z(t.getDate()); };
-  $('#date').value = today();
-
   // クリア（確認は画面内で）
   const clearBtns = (confirming) => { $('#clearAll').hidden = confirming; $('#clearYes').hidden = !confirming; $('#clearNo').hidden = !confirming; };
   $('#clearAll').addEventListener('click', () => clearBtns(true));
   $('#clearNo').addEventListener('click', () => clearBtns(false));
   $('#clearYes').addEventListener('click', () => {
     TEXT_IDS.forEach((id) => { $('#' + id).value = ''; });
-    $('#date').value = today();
     document.querySelectorAll('input[type="checkbox"]').forEach((c) => { c.checked = false; });
     document.querySelectorAll('.photo-block').forEach((blk) => blk.reset());
     clearBtns(false); showMsg(''); edited();
