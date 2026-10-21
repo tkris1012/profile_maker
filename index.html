@@ -172,6 +172,21 @@ button.btn.danger { color: var(--danger); }
         <label class="f">家族構成<input type="text" id="family" maxlength="50" value="夫・子ども2人（中学生・小学生）"></label>
         <label class="f">登録日<input type="date" id="date"></label>
       </div>
+      <div class="check-row"><span>つなぎ</span>
+        <div class="seg" aria-label="つなぎ">
+          <label><input type="checkbox" name="tsunagi" value="宮" checked><span>宮</span></label>
+          <label><input type="checkbox" name="tsunagi" value="吉"><span>吉</span></label>
+          <label><input type="checkbox" name="tsunagi" value="佐"><span>佐</span></label>
+          <label><input type="checkbox" name="tsunagi" value="矢"><span>矢</span></label>
+        </div>
+      </div>
+      <div class="check-row"><span>PBS</span>
+        <div class="seg" aria-label="PBS">
+          <label><input type="checkbox" name="pbs" value="青P" checked><span>青P</span></label>
+          <label><input type="checkbox" name="pbs" value="石P"><span>石P</span></label>
+          <label><input type="checkbox" name="pbs" value="古P"><span>古P</span></label>
+        </div>
+      </div>
     </section>
 
     <section class="group">
@@ -199,21 +214,6 @@ button.btn.danger { color: var(--danger); }
       <div class="row2">
         <label class="f">紹介者<input type="text" id="introducer" maxlength="30" value="佐藤 一郎"></label>
         <label class="f">グループ<input type="text" id="group" maxlength="30" value="Aグループ"></label>
-      </div>
-      <div class="check-row"><span>つなぎ</span>
-        <div class="seg" aria-label="つなぎ">
-          <label><input type="checkbox" name="tsunagi" value="宮" checked><span>宮</span></label>
-          <label><input type="checkbox" name="tsunagi" value="吉"><span>吉</span></label>
-          <label><input type="checkbox" name="tsunagi" value="佐"><span>佐</span></label>
-          <label><input type="checkbox" name="tsunagi" value="矢"><span>矢</span></label>
-        </div>
-      </div>
-      <div class="check-row"><span>PBS</span>
-        <div class="seg" aria-label="PBS">
-          <label><input type="checkbox" name="pbs" value="青P" checked><span>青P</span></label>
-          <label><input type="checkbox" name="pbs" value="石P"><span>石P</span></label>
-          <label><input type="checkbox" name="pbs" value="古P"><span>古P</span></label>
-        </div>
       </div>
       <p class="hint">写真は拡大したあと、プレビュー上でドラッグすると位置を調整できます。</p>
     </section>
@@ -465,7 +465,14 @@ button.btn.danger { color: var(--danger); }
     return cy + h - y;
   }
 
-  // 紹介者・グループ・つなぎ・PBS（背景つきパネル）
+  // メンバーのつなぎ・PBS
+  function memberChecks(L, x, y, w, d) {
+    let h = chipRow(L, x, y, w, 'つなぎ', TSUNAGI, d.tsunagi);
+    h += .016 * L.U;
+    return h + chipRow(L, x, y + h, w, 'PBS', PBS, d.pbs);
+  }
+
+  // 紹介者・グループ（背景つきパネル）
   function introPanel(L, x, y, w, d) {
     const inner = (M, draw) => {
       const U = M.U, p = .035 * U, dd = .14 * U;
@@ -488,10 +495,7 @@ button.btn.danger { color: var(--danger); }
           M.text(tx + j * (cw + g), ty + kh, cw, v || '—', .032, 700, M.col.name, 1.4);
         });
       }
-      h += Math.max(dd, th) + .03 * U;
-      h += chipRow(M, x + p, y + h, w - p * 2, 'つなぎ', TSUNAGI, d.tsunagi);
-      h += .016 * U;
-      h += chipRow(M, x + p, y + h, w - p * 2, 'PBS', PBS, d.pbs);
+      h += Math.max(dd, th);
       return h + p;
     };
     const ghost = { ...L, draw: false, text: makeL(false, L.s, L.u, L.fam, L.col).text };
@@ -516,6 +520,8 @@ button.btn.danger { color: var(--danger); }
       ly += L.text(pad, ly, lw, d.name, .066, 900, L.col.name, 1.25, 'center');
       ly += .025 * U;
       ly += infoGrid(L, pad, ly, lw, 2, d, 'center');
+      ly += .04 * U;
+      ly += memberChecks(L, pad, ly, lw, d);
       if (L.draw) { ctx.fillStyle = L.col.line; ctx.fillRect(pad + lw + W * .0225, top, 2, bottom - top); }
       const secH = sections(L, rx, top, rw, d);
       const ip = introPanel({ ...L, draw: false, text: makeL(false, L.s, L.u, L.fam, L.col).text }, rx, 0, rw, d);
@@ -538,7 +544,8 @@ button.btn.danger { color: var(--danger); }
       L.text(tx, ry, tw, d.name, .072, 900, L.col.name, 1.25);
       infoGrid(L, tx, ry + nameH + .025 * U, tw, 2, d);
     }
-    let y = top + heroH;
+    let y = top + heroH + .04 * U;
+    y += memberChecks(L, pad, y, w, d);
     const secH = sections(ghost, pad, 0, w, d);
     if (secH) {
       y += .04 * U;
