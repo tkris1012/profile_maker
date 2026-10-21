@@ -62,6 +62,7 @@ input[type="text"], textarea, select {
   border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px;
 }
 textarea { resize: vertical; min-height: 84px; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: .7; }
 input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible, .seg label:focus-within {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
@@ -172,19 +173,19 @@ button.btn.danger { color: var(--danger); }
         <input type="file" id="photo-member" class="pfile" accept="image/*">
         <button type="button" class="btn ptrim" disabled>トリミング・回転</button>
       </div>
-      <label class="f"><span>名前 <small>（必須）</small></span><input type="text" id="name" maxlength="30" value="山田 花子"></label>
+      <label class="f"><span>名前 <small>（必須）</small></span><input type="text" id="name" maxlength="30" placeholder="例：山田 花子"></label>
       <div class="row3">
-        <label class="f">年齢<input type="text" id="age" inputmode="numeric" maxlength="3" value="42"></label>
-        <label class="f">地域<input type="text" id="area" maxlength="30" value="埼玉県さいたま市"></label>
-        <label class="f">職業<input type="text" id="job" maxlength="30" value="パート（事務）"></label>
+        <label class="f">年齢<input type="text" id="age" inputmode="numeric" maxlength="3" placeholder="例：42"></label>
+        <label class="f">地域<input type="text" id="area" maxlength="30" placeholder="例：埼玉県さいたま市"></label>
+        <label class="f">職業<input type="text" id="job" maxlength="30" placeholder="例：パート（事務）"></label>
       </div>
       <div class="row2">
-        <label class="f">家族構成<input type="text" id="family" maxlength="50" value="夫・子ども2人（中学生・小学生）"></label>
+        <label class="f">家族構成<input type="text" id="family" maxlength="50" placeholder="例：夫・子ども2人（中学生・小学生）"></label>
         <label class="f">登録日<input type="date" id="date"></label>
       </div>
       <div class="check-row"><span>つなぎ</span>
         <div class="seg" aria-label="つなぎ">
-          <label><input type="checkbox" name="tsunagi" value="宮" checked><span>宮</span></label>
+          <label><input type="checkbox" name="tsunagi" value="宮"><span>宮</span></label>
           <label><input type="checkbox" name="tsunagi" value="吉"><span>吉</span></label>
           <label><input type="checkbox" name="tsunagi" value="佐"><span>佐</span></label>
           <label><input type="checkbox" name="tsunagi" value="矢"><span>矢</span></label>
@@ -192,7 +193,7 @@ button.btn.danger { color: var(--danger); }
       </div>
       <div class="check-row"><span>PBS</span>
         <div class="seg" aria-label="PBS">
-          <label><input type="checkbox" name="pbs" value="青P" checked><span>青P</span></label>
+          <label><input type="checkbox" name="pbs" value="青P"><span>青P</span></label>
           <label><input type="checkbox" name="pbs" value="石P"><span>石P</span></label>
           <label><input type="checkbox" name="pbs" value="古P"><span>古P</span></label>
         </div>
@@ -201,10 +202,10 @@ button.btn.danger { color: var(--danger); }
 
     <section class="group">
       <h2>詳細</h2>
-      <label class="f">ニーズ<textarea id="needs" rows="2" maxlength="200">家計の足しになる収入がほしい。子どもの教育費に備えたい。</textarea></label>
-      <label class="f">性格<textarea id="character" rows="2" maxlength="200">明るく面倒見がよい。慎重派で、納得してから動くタイプ。</textarea></label>
-      <label class="f">やる理由<textarea id="reason" rows="2" maxlength="200">子どもとの時間を大切にしながら、自分の力で収入をつくりたい。</textarea></label>
-      <label class="f">その他<textarea id="other" rows="2" maxlength="200">平日の午前中が連絡しやすい。</textarea></label>
+      <label class="f">ニーズ<textarea id="needs" rows="2" maxlength="200" placeholder="例：家計の足しになる収入がほしい。子どもの教育費に備えたい。"></textarea></label>
+      <label class="f">性格<textarea id="character" rows="2" maxlength="200" placeholder="例：明るく面倒見がよい。慎重派で、納得してから動くタイプ。"></textarea></label>
+      <label class="f">やる理由<textarea id="reason" rows="2" maxlength="200" placeholder="例：子どもとの時間を大切にしながら、自分の力で収入をつくりたい。"></textarea></label>
+      <label class="f">その他<textarea id="other" rows="2" maxlength="200" placeholder="例：平日の午前中が連絡しやすい。"></textarea></label>
     </section>
 
     <section class="group">
@@ -218,13 +219,13 @@ button.btn.danger { color: var(--danger); }
         <button type="button" class="btn ptrim" disabled>トリミング・回転</button>
       </div>
       <div class="row2">
-        <label class="f">紹介者<input type="text" id="introducer" maxlength="30" value="佐藤 一郎"></label>
-        <label class="f">グループ<input type="text" id="group" maxlength="30" value="Aグループ"></label>
+        <label class="f">紹介者<input type="text" id="introducer" maxlength="30" placeholder="例：佐藤 一郎"></label>
+        <label class="f">グループ<input type="text" id="group" maxlength="30" placeholder="例：Aグループ"></label>
       </div>
       <div class="row3">
-        <label class="f">年齢<input type="text" id="introAge" inputmode="numeric" maxlength="3" value="55"></label>
-        <label class="f">地域<input type="text" id="introArea" maxlength="30" value="東京都練馬区"></label>
-        <label class="f">職業<input type="text" id="introJob" maxlength="30" value="自営業"></label>
+        <label class="f">年齢<input type="text" id="introAge" inputmode="numeric" maxlength="3" placeholder="例：55"></label>
+        <label class="f">地域<input type="text" id="introArea" maxlength="30" placeholder="例：東京都練馬区"></label>
+        <label class="f">職業<input type="text" id="introJob" maxlength="30" placeholder="例：自営業"></label>
       </div>
     </section>
 
@@ -803,7 +804,7 @@ button.btn.danger { color: var(--danger); }
   const NEED_NAME = '名前を入力するとダウンロードできます。';
   function updateDownloadState(d) {
     $('#download').disabled = !d.name;
-    if (!d.name) showMsg(NEED_NAME, 'err');
+    if (!d.name) showMsg(NEED_NAME);
     else if ($('#msg').textContent === NEED_NAME) showMsg('');
   }
   let downloadsApi = null;
