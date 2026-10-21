@@ -72,7 +72,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   border-radius: 10px; background: var(--field); cursor: pointer;
 }
 .drop.over { border-color: var(--accent); }
-.drop .thumb { width: 64px; height: 64px; border-radius: 50%; background: var(--line) center/cover no-repeat; flex: none; }
+.drop .thumb { width: 64px; height: 64px; border-radius: 50%; background: var(--line); flex: none; }
 .drop .txt { min-width: 0; font-size: 13px; }
 .drop .txt b { display: block; }
 .drop .txt span { color: var(--muted); font-size: 12px; }
@@ -98,8 +98,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .swatches input[type="color"] { width: 36px; height: 32px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); padding: 2px; cursor: pointer; }
 
 .stage { display: grid; place-items: center; background: repeating-conic-gradient(var(--field) 0 25%, var(--bg) 0 50%) 0 0 / 20px 20px; border-radius: 10px; padding: 14px; min-height: 240px; }
-#card { display: block; max-width: 100%; max-height: calc(100vh - 260px); width: auto; height: auto; border-radius: 4px; box-shadow: 0 6px 24px rgba(0,0,0,.18); touch-action: none; cursor: grab; }
-#card.dragging { cursor: grabbing; }
+#card { display: block; max-width: 100%; max-height: calc(100vh - 260px); width: auto; height: auto; border-radius: 4px; box-shadow: 0 6px 24px rgba(0,0,0,.18); }
 .hint { font-size: 12px; color: var(--muted); margin: 0; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -117,6 +116,21 @@ button.btn.danger { color: var(--danger); }
 .row3 { display: grid; grid-template-columns: 0.6fr 1fr 1fr; gap: 12px; }
 .check-row { display: grid; grid-template-columns: 4.5em 1fr; gap: 10px; align-items: center; font-size: 13px; font-weight: 700; }
 .photo-block { display: grid; gap: 10px; }
+.photo-block .ptrim { justify-self: start; padding: 8px 14px; }
+
+/* トリミング画面 */
+.cropper {
+  position: fixed; inset: 0; z-index: 20; background: rgba(10, 12, 18, .72); display: grid; place-items: center; overflow: auto;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.cropper[hidden] { display: none; }
+.crop-box { background: var(--panel); color: var(--fg); border-radius: 14px; padding: 18px; width: min(680px, 100%); display: grid; gap: 12px; }
+.crop-box h2 { margin: 0; font-size: 16px; }
+.crop-stage { display: grid; place-items: center; background: #101216; border-radius: 8px; padding: 8px; min-width: 0; }
+#cropCanvas { display: block; touch-action: none; cursor: move; }
+.crop-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.crop-actions .grow { flex: 1; }
+.crop-actions .btn.primary { flex: 0 0 auto; font-size: 14px; }
 .tabs { display: none; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
@@ -152,15 +166,11 @@ button.btn.danger { color: var(--danger); }
       <h2>メンバー</h2>
       <div class="photo-block" data-photo="member">
         <label class="drop" for="photo-member">
-          <span class="thumb"></span>
+          <canvas class="thumb" width="128" height="128"></canvas>
           <span class="txt"><b class="plabel">メンバー写真を選ぶ</b><span>タップして選択、またはここにドラッグ＆ドロップ</span></span>
         </label>
         <input type="file" id="photo-member" class="pfile" accept="image/*">
-        <div class="range">
-          <span>拡大</span>
-          <input type="range" id="zoom-member" class="pzoom" min="1" max="3" step="0.01" value="1" aria-label="メンバー写真の拡大率">
-          <button type="button" class="btn preset" style="padding:6px 12px">位置リセット</button>
-        </div>
+        <button type="button" class="btn ptrim" disabled>トリミング・回転</button>
       </div>
       <label class="f"><span>名前 <small>（必須）</small></span><input type="text" id="name" maxlength="30" value="山田 花子"></label>
       <div class="row3">
@@ -201,15 +211,11 @@ button.btn.danger { color: var(--danger); }
       <h2>紹介</h2>
       <div class="photo-block" data-photo="intro">
         <label class="drop" for="photo-intro">
-          <span class="thumb"></span>
+          <canvas class="thumb" width="128" height="128"></canvas>
           <span class="txt"><b class="plabel">紹介者写真を選ぶ</b><span>タップして選択、またはここにドラッグ＆ドロップ</span></span>
         </label>
         <input type="file" id="photo-intro" class="pfile" accept="image/*">
-        <div class="range">
-          <span>拡大</span>
-          <input type="range" id="zoom-intro" class="pzoom" min="1" max="3" step="0.01" value="1" aria-label="紹介者写真の拡大率">
-          <button type="button" class="btn preset" style="padding:6px 12px">位置リセット</button>
-        </div>
+        <button type="button" class="btn ptrim" disabled>トリミング・回転</button>
       </div>
       <div class="row2">
         <label class="f">紹介者<input type="text" id="introducer" maxlength="30" value="佐藤 一郎"></label>
@@ -220,7 +226,6 @@ button.btn.danger { color: var(--danger); }
         <label class="f">地域<input type="text" id="introArea" maxlength="30" value="東京都練馬区"></label>
         <label class="f">職業<input type="text" id="introJob" maxlength="30" value="自営業"></label>
       </div>
-      <p class="hint">写真は拡大したあと、プレビュー上でドラッグすると位置を調整できます。</p>
     </section>
 
     <section class="group">
@@ -265,6 +270,26 @@ button.btn.danger { color: var(--danger); }
   </section>
 </main>
 
+<div class="cropper" id="cropper" hidden role="dialog" aria-modal="true" aria-labelledby="cropTitle">
+  <div class="crop-box">
+    <h2 id="cropTitle">写真のトリミング</h2>
+    <p class="hint">枠の中をドラッグで移動、四隅の●をドラッグで大きさを変更できます。丸の内側が画像に入ります。</p>
+    <div class="crop-stage"><canvas id="cropCanvas" aria-label="トリミング範囲"></canvas></div>
+    <div class="range">
+      <span>枠の大きさ</span>
+      <input type="range" id="cropSize" min="0.05" max="1" step="0.001" value="1" aria-label="トリミング枠の大きさ">
+      <span></span>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="btn" id="cropRotate">90°回転</button>
+      <button type="button" class="btn" id="cropFull">枠を最大に戻す</button>
+      <span class="grow"></span>
+      <button type="button" class="btn" id="cropCancel">キャンセル</button>
+      <button type="button" class="btn primary" id="cropOk">決定</button>
+    </div>
+  </div>
+</div>
+
 <nav class="tabs" role="tablist" aria-label="表示切替">
   <button type="button" role="tab" id="tabEdit" aria-selected="true">入力する</button>
   <button type="button" role="tab" id="tabPreview" aria-selected="false">プレビュー・保存</button>
@@ -288,8 +313,8 @@ button.btn.danger { color: var(--danger); }
   const TEXT_IDS = ['name', 'age', 'area', 'job', 'family', 'needs', 'character', 'reason', 'other', 'introducer', 'group', 'introAge', 'introArea', 'introJob'];
 
   const state = { color: PRESETS[0], photos: { member: newPhoto(), intro: newPhoto() } };
-  function newPhoto() { return { img: null, url: null, zoom: 1, fx: 0, fy: 0 }; }
-  let boxes = {}; // 直近描画時の写真枠（ドラッグ判定用）
+  // orig: 元画像 / rot: 回転（90°単位）/ src: 回転後の画像 / crop: src 上の正方形の切り抜き範囲
+  function newPhoto() { return { orig: null, url: null, rot: 0, src: null, crop: null }; }
 
   // ---------- 色 ----------
   const hexToRgb = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
@@ -364,14 +389,11 @@ button.btn.danger { color: var(--danger); }
   // ---------- 写真（円形） ----------
   function drawPhoto(key, x, y, dd, col, ringW) {
     const p = state.photos[key];
-    const b = { x, y, w: dd, h: dd };
     ctx.save();
     ctx.beginPath(); ctx.arc(x + dd / 2, y + dd / 2, dd / 2, 0, Math.PI * 2); ctx.clip();
-    if (p.img) {
-      const sc = Math.max(dd / p.img.naturalWidth, dd / p.img.naturalHeight) * p.zoom;
-      const dw = p.img.naturalWidth * sc, dh = p.img.naturalHeight * sc;
-      b.mx = (dw - dd) / 2; b.my = (dh - dd) / 2;
-      ctx.drawImage(p.img, x - b.mx + p.fx * b.mx, y - b.my + p.fy * b.my, dw, dh);
+    if (p.src) {
+      const c = p.crop;
+      ctx.drawImage(p.src, c.x, c.y, c.s, c.s, x, y, dd, dd);
     } else {
       ctx.fillStyle = col.placeholder; ctx.fillRect(x, y, dd, dd);
       ctx.fillStyle = col.placeholderIcon;
@@ -380,7 +402,6 @@ button.btn.danger { color: var(--danger); }
     }
     ctx.restore();
     if (ringW) { ctx.beginPath(); ctx.arc(x + dd / 2, y + dd / 2, dd / 2, 0, Math.PI * 2); ctx.lineWidth = ringW; ctx.strokeStyle = col.ring; ctx.stroke(); }
-    boxes[key] = b;
   }
 
   // ---------- レイアウト部品（draw=false なら高さだけ返す） ----------
@@ -569,7 +590,6 @@ button.btn.danger { color: var(--danger); }
     const u = Math.min(W, H), pad = .065 * u;
     const col = palette(d.tpl, state.color);
     const fam = FONTS[d.font];
-    boxes = {};
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = col.bg; ctx.fillRect(0, 0, W, H);
 
@@ -598,10 +618,27 @@ button.btn.danger { color: var(--danger); }
   const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); };
 
   // ---------- 写真入力（メンバー・紹介者） ----------
+  const dims = (src) => [src.naturalWidth || src.width, src.naturalHeight || src.height];
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  function rotated(img, rot) {
+    if (!rot) return img;
+    const [w, h] = dims(img), c = document.createElement('canvas');
+    c.width = rot % 2 ? h : w; c.height = rot % 2 ? w : h;
+    const g = c.getContext('2d');
+    g.translate(c.width / 2, c.height / 2); g.rotate(rot * Math.PI / 2); g.drawImage(img, -w / 2, -h / 2);
+    return c;
+  }
+  function fullCrop(src) { const [w, h] = dims(src), m = Math.min(w, h); return { x: (w - m) / 2, y: (h - m) / 2, s: m }; }
+  function drawThumb(blk, p) {
+    const t = $('.thumb', blk), g = t.getContext('2d');
+    g.clearRect(0, 0, t.width, t.height);
+    if (p.src) g.drawImage(p.src, p.crop.x, p.crop.y, p.crop.s, p.crop.s, 0, 0, t.width, t.height);
+  }
+
   document.querySelectorAll('.photo-block').forEach((blk) => {
     const key = blk.dataset.photo;
     const p = state.photos[key];
-    const thumb = $('.thumb', blk), label = $('.plabel', blk), drop = $('.drop', blk), zoom = $('.pzoom', blk);
+    const label = $('.plabel', blk), drop = $('.drop', blk), trim = $('.ptrim', blk);
     const baseLabel = label.textContent;
     const load = (file) => {
       if (!file || !file.type.startsWith('image/')) { showMsg('画像ファイル（JPEG・PNGなど）を選んでください。', 'err'); return; }
@@ -609,11 +646,11 @@ button.btn.danger { color: var(--danger); }
       const img = new Image();
       img.onload = () => {
         if (p.url) URL.revokeObjectURL(p.url);
-        Object.assign(p, { img, url, zoom: 1, fx: 0, fy: 0 });
-        zoom.value = 1;
-        thumb.style.backgroundImage = 'url("' + url + '")';
+        Object.assign(p, { orig: img, url, rot: 0, src: img, crop: fullCrop(img) });
         label.textContent = baseLabel.replace('を選ぶ', 'を変更する');
-        showMsg(''); schedule();
+        trim.disabled = false;
+        drawThumb(blk, p); showMsg(''); schedule();
+        openCrop(blk, p); // 選んだらすぐトリミング画面へ
       };
       img.onerror = () => { URL.revokeObjectURL(url); showMsg('この画像は読み込めませんでした。別の画像を選んでください（HEICは非対応の場合があります）。', 'err'); };
       img.src = url;
@@ -622,39 +659,108 @@ button.btn.danger { color: var(--danger); }
     ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
     ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
     drop.addEventListener('drop', (e) => load(e.dataTransfer.files[0]));
-    zoom.addEventListener('input', () => { p.zoom = +zoom.value; schedule(); });
-    $('.preset', blk).addEventListener('click', () => { Object.assign(p, { zoom: 1, fx: 0, fy: 0 }); zoom.value = 1; schedule(); });
+    trim.addEventListener('click', () => openCrop(blk, p));
     blk.reset = () => {
       if (p.url) URL.revokeObjectURL(p.url);
       Object.assign(p, newPhoto());
-      $('.pfile', blk).value = ''; zoom.value = 1; thumb.style.backgroundImage = ''; label.textContent = baseLabel;
+      $('.pfile', blk).value = ''; label.textContent = baseLabel; trim.disabled = true;
+      drawThumb(blk, p);
     };
   });
 
-  // プレビュー上のドラッグで写真位置を調整（押した位置の写真を動かす）
-  let drag = null;
-  const toCanvas = (e) => { const r = canvas.getBoundingClientRect(), k = canvas.width / r.width; return [(e.clientX - r.left) * k, (e.clientY - r.top) * k, k]; };
-  canvas.addEventListener('pointerdown', (e) => {
-    const [cx, cy] = toCanvas(e);
-    const key = Object.keys(boxes).find((k) => { const b = boxes[k]; return state.photos[k].img && cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h; });
-    if (!key) return;
-    const p = state.photos[key];
-    drag = { key, x: e.clientX, y: e.clientY, fx: p.fx, fy: p.fy };
-    canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging');
+  // ---------- トリミング画面 ----------
+  const cc = $('#cropCanvas'), cg = cc.getContext('2d');
+  const cr = { blk: null, p: null, rot: 0, src: null, crop: null, k: 1, dpr: 1, opener: null };
+  const CM = 14; // 角の●が画像の外にはみ出しても掴めるよう、画像の周りに余白を取る（CSS px）
+  const corners = (c) => [[c.x, c.y], [c.x + c.s, c.y], [c.x + c.s, c.y + c.s], [c.x, c.y + c.s]];
+  const minSize = () => Math.max(16, Math.min(...dims(cr.src)) * .04);
+
+  function openCrop(blk, p) {
+    Object.assign(cr, { blk, p, rot: p.rot, src: p.src, crop: { ...p.crop }, opener: document.activeElement });
+    $('#cropper').hidden = false;
+    document.body.style.overflow = 'hidden';
+    layoutCrop();
+    $('#cropOk').focus();
+  }
+  function closeCrop(apply) {
+    if (apply) {
+      Object.assign(cr.p, { rot: cr.rot, src: cr.src, crop: cr.crop });
+      drawThumb(cr.blk, cr.p); schedule();
+    }
+    $('#cropper').hidden = true;
+    document.body.style.overflow = '';
+    if (cr.opener && cr.opener.focus) cr.opener.focus();
+  }
+  function layoutCrop() {
+    const [w, h] = dims(cr.src), stage = $('.crop-stage');
+    const k = Math.min((stage.clientWidth - 16 - CM * 2) / w, (Math.min(window.innerHeight * .55, 560) - CM * 2) / h);
+    cr.k = k; cr.dpr = window.devicePixelRatio || 1;
+    cc.style.width = w * k + CM * 2 + 'px'; cc.style.height = h * k + CM * 2 + 'px';
+    cc.width = Math.round((w * k + CM * 2) * cr.dpr); cc.height = Math.round((h * k + CM * 2) * cr.dpr);
+    drawCrop();
+  }
+  function drawCrop() {
+    const [w, h] = dims(cr.src), c = cr.crop, k = cr.k;
+    cg.setTransform(1, 0, 0, 1, 0, 0);
+    cg.clearRect(0, 0, cc.width, cc.height);
+    cg.setTransform(cr.dpr * k, 0, 0, cr.dpr * k, CM * cr.dpr, CM * cr.dpr);
+    cg.drawImage(cr.src, 0, 0);
+    cg.fillStyle = 'rgba(0,0,0,.55)';
+    cg.beginPath(); cg.rect(0, 0, w, h); cg.arc(c.x + c.s / 2, c.y + c.s / 2, c.s / 2, 0, Math.PI * 2); cg.fill('evenodd');
+    cg.lineWidth = 2 / k; cg.strokeStyle = 'rgba(255,255,255,.9)'; cg.strokeRect(c.x, c.y, c.s, c.s);
+    for (const [hx, hy] of corners(c)) {
+      cg.beginPath(); cg.arc(hx, hy, 9 / k, 0, Math.PI * 2);
+      cg.fillStyle = '#ffffff'; cg.fill(); cg.strokeStyle = 'rgba(0,0,0,.45)'; cg.stroke();
+    }
+    $('#cropSize').value = c.s / Math.min(w, h);
+  }
+  function setCropSize(sz) { // 中心を保ったまま大きさを変える
+    const [w, h] = dims(cr.src), c = cr.crop;
+    const cx = c.x + c.s / 2, cy = c.y + c.s / 2;
+    c.s = clamp(sz, minSize(), Math.min(w, h));
+    c.x = clamp(cx - c.s / 2, 0, w - c.s); c.y = clamp(cy - c.s / 2, 0, h - c.s);
+    drawCrop();
+  }
+
+  let cd = null;
+  const toImg = (e) => { const r = cc.getBoundingClientRect(); return [(e.clientX - r.left - CM) / cr.k, (e.clientY - r.top - CM) / cr.k]; };
+  cc.addEventListener('pointerdown', (e) => {
+    const [px, py] = toImg(e), c = cr.crop, cs = corners(c);
+    const i = cs.findIndex(([hx, hy]) => Math.hypot(px - hx, py - hy) <= 24 / cr.k);
+    if (i >= 0) {
+      const [ax, ay] = cs[(i + 2) % 4];
+      cd = { mode: 'resize', ax, ay, sx: Math.sign(cs[i][0] - ax), sy: Math.sign(cs[i][1] - ay) };
+    } else if (px >= c.x && px <= c.x + c.s && py >= c.y && py <= c.y + c.s) {
+      cd = { mode: 'move', px, py, x0: c.x, y0: c.y };
+    } else return;
+    cc.setPointerCapture(e.pointerId);
   });
-  canvas.addEventListener('pointermove', (e) => {
-    if (!drag) return;
-    const b = boxes[drag.key], p = state.photos[drag.key];
-    if (!b) return;
-    const k = toCanvas(e)[2];
-    const clamp = (v) => Math.max(-1, Math.min(1, v));
-    if (b.mx > 0) p.fx = clamp(drag.fx + (e.clientX - drag.x) * k / b.mx);
-    if (b.my > 0) p.fy = clamp(drag.fy + (e.clientY - drag.y) * k / b.my);
-    schedule();
+  cc.addEventListener('pointermove', (e) => {
+    if (!cd) return;
+    const [px, py] = toImg(e), [w, h] = dims(cr.src), c = cr.crop;
+    if (cd.mode === 'move') {
+      c.x = clamp(cd.x0 + px - cd.px, 0, w - c.s);
+      c.y = clamp(cd.y0 + py - cd.py, 0, h - c.s);
+    } else { // 対角の角を固定して正方形のまま拡大縮小
+      const room = Math.min(cd.sx > 0 ? w - cd.ax : cd.ax, cd.sy > 0 ? h - cd.ay : cd.ay);
+      const sz = clamp(Math.max((px - cd.ax) * cd.sx, (py - cd.ay) * cd.sy), minSize(), room);
+      c.s = sz; c.x = cd.sx > 0 ? cd.ax : cd.ax - sz; c.y = cd.sy > 0 ? cd.ay : cd.ay - sz;
+    }
+    drawCrop();
   });
-  const endDrag = () => { drag = null; canvas.classList.remove('dragging'); };
-  canvas.addEventListener('pointerup', endDrag);
-  canvas.addEventListener('pointercancel', endDrag);
+  const endCrop = () => { cd = null; };
+  cc.addEventListener('pointerup', endCrop);
+  cc.addEventListener('pointercancel', endCrop);
+  cc.addEventListener('wheel', (e) => { e.preventDefault(); setCropSize(cr.crop.s * (e.deltaY > 0 ? 1.06 : 1 / 1.06)); }, { passive: false });
+  $('#cropSize').addEventListener('input', (e) => setCropSize(+e.target.value * Math.min(...dims(cr.src))));
+  $('#cropRotate').addEventListener('click', () => {
+    cr.rot = (cr.rot + 1) % 4; cr.src = rotated(cr.p.orig, cr.rot); cr.crop = fullCrop(cr.src); layoutCrop();
+  });
+  $('#cropFull').addEventListener('click', () => { cr.crop = fullCrop(cr.src); drawCrop(); });
+  $('#cropOk').addEventListener('click', () => closeCrop(true));
+  $('#cropCancel').addEventListener('click', () => closeCrop(false));
+  $('#cropper').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCrop(false); });
+  window.addEventListener('resize', () => { if (!$('#cropper').hidden) layoutCrop(); });
 
   // ---------- カラー ----------
   const sw = $('#swatches');
