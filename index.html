@@ -215,6 +215,11 @@ button.btn.danger { color: var(--danger); }
         <label class="f">紹介者<input type="text" id="introducer" maxlength="30" value="佐藤 一郎"></label>
         <label class="f">グループ<input type="text" id="group" maxlength="30" value="Aグループ"></label>
       </div>
+      <div class="row3">
+        <label class="f">年齢<input type="text" id="introAge" inputmode="numeric" maxlength="3" value="55"></label>
+        <label class="f">地域<input type="text" id="introArea" maxlength="30" value="東京都練馬区"></label>
+        <label class="f">職業<input type="text" id="introJob" maxlength="30" value="自営業"></label>
+      </div>
       <p class="hint">写真は拡大したあと、プレビュー上でドラッグすると位置を調整できます。</p>
     </section>
 
@@ -280,7 +285,7 @@ button.btn.danger { color: var(--danger); }
   const PRESETS = ['#2f6fed', '#e2546b', '#f08a24', '#2a9d6f', '#7b5cd6', '#3a4256'];
   const TSUNAGI = ['宮', '吉', '佐', '矢'];
   const PBS = ['青P', '石P', '古P'];
-  const TEXT_IDS = ['name', 'age', 'area', 'job', 'family', 'needs', 'character', 'reason', 'other', 'introducer', 'group'];
+  const TEXT_IDS = ['name', 'age', 'area', 'job', 'family', 'needs', 'character', 'reason', 'other', 'introducer', 'group', 'introAge', 'introArea', 'introJob'];
 
   const state = { color: PRESETS[0], photos: { member: newPhoto(), intro: newPhoto() } };
   function newPhoto() { return { img: null, url: null, zoom: 1, fx: 0, fy: 0 }; }
@@ -400,9 +405,11 @@ button.btn.danger { color: var(--danger); }
   }
 
   // 年齢・地域・職業・家族構成
-  function infoGrid(L, x, y, w, cols, d, align = 'left') {
-    const items = [['年齢', d.age ? d.age + (/^\d+$/.test(d.age) ? '歳' : '') : ''], ['地域', d.area], ['職業', d.job], ['家族構成', d.family]]
-      .filter(([, v]) => v);
+  const fmtAge = (a) => a ? a + (/^\d+$/.test(a) ? '歳' : '') : '';
+
+  // 見出し＋値の格子（空の値は省く）
+  function kvGrid(L, x, y, w, cols, items, align = 'left', vsize = .031) {
+    items = items.filter(([, v]) => v);
     const g = .03 * L.U, rg = .022 * L.U;
     const cw = (w - g * (cols - 1)) / cols;
     let h = 0;
@@ -411,13 +418,17 @@ button.btn.danger { color: var(--danger); }
       items.slice(i, i + cols).forEach(([k, v], j) => {
         const cx = x + j * (cw + g);
         let ch = L.text(cx, y + h, cw, k, .022, 700, L.col.muted, 1.5, align, .08);
-        ch += L.text(cx, y + h + ch, cw, v, .031, 700, L.col.name, 1.4, align);
+        ch += L.text(cx, y + h + ch, cw, v, vsize, 700, L.col.name, 1.4, align);
         rh = Math.max(rh, ch);
       });
       h += rh + rg;
     }
     return items.length ? h - rg : 0;
   }
+
+  // 年齢・地域・職業・家族構成
+  const infoGrid = (L, x, y, w, cols, d, align) =>
+    kvGrid(L, x, y, w, cols, [['年齢', fmtAge(d.age)], ['地域', d.area], ['職業', d.job], ['家族構成', d.family]], align);
 
   // ニーズ・性格・やる理由・その他
   function sections(L, x, y, w, d) {
@@ -472,31 +483,23 @@ button.btn.danger { color: var(--danger); }
     return h + chipRow(L, x, y + h, w, 'PBS', PBS, d.pbs);
   }
 
-  // 紹介者・グループ（背景つきパネル）
+  // 紹介者の情報（背景つきパネル）
   function introPanel(L, x, y, w, d) {
     const inner = (M, draw) => {
       const U = M.U, p = .035 * U, dd = .14 * U;
-      let h = p;
-      if (draw) drawPhoto('intro', x + p, y + h, dd, M.col, 0);
       const tx = x + p + dd + .035 * U, tw = w - p * 2 - dd - .035 * U;
-      const cols = [['紹介者', d.introducer], ['グループ', d.group]];
-      const g = .03 * U, cw = (tw - g) / 2;
-      let th = 0;
-      const G = makeL(false, M.s, M.u, M.fam, M.col);
-      cols.forEach(([k, v], j) => {
-        let ch = G.text(tx + j * (cw + g), 0, cw, k, .022, 700, M.col.muted, 1.5, 'left', .08);
-        ch += G.text(tx + j * (cw + g), 0, cw, v || '—', .032, 700, M.col.name, 1.4);
-        th = Math.max(th, ch);
-      });
+      const block = (B, ty) => {
+        let h = kvGrid(B, tx, ty, tw, 2, [['紹介者', d.introducer || '—'], ['グループ', d.group || '—']], 'left', .032);
+        const sub = [['年齢', fmtAge(d.introAge)], ['地域', d.introArea], ['職業', d.introJob]];
+        if (sub.some(([, v]) => v)) h += .022 * U + kvGrid(B, tx, ty + h + .022 * U, tw, 3, sub, 'left', .028);
+        return h;
+      };
+      const th = block(makeL(false, M.s, M.u, M.fam, M.col), 0);
       if (draw) {
-        const ty = y + h + Math.max(0, (dd - th) / 2);
-        cols.forEach(([k, v], j) => {
-          const kh = M.text(tx + j * (cw + g), ty, cw, k, .022, 700, M.col.muted, 1.5, 'left', .08);
-          M.text(tx + j * (cw + g), ty + kh, cw, v || '—', .032, 700, M.col.name, 1.4);
-        });
+        drawPhoto('intro', x + p, y + p + Math.max(0, (th - dd) / 2), dd, M.col, 0);
+        block(M, y + p + Math.max(0, (dd - th) / 2));
       }
-      h += Math.max(dd, th);
-      return h + p;
+      return p * 2 + Math.max(dd, th);
     };
     const ghost = { ...L, draw: false, text: makeL(false, L.s, L.u, L.fam, L.col).text };
     const h = inner(ghost, false);
