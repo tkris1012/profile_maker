@@ -110,6 +110,9 @@ button.btn {
 button.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); flex: 1 1 220px; font-size: 15px; }
 button.btn:disabled { opacity: .5; cursor: not-allowed; }
 button.btn.danger { color: var(--danger); }
+.save-img { display: grid; gap: 8px; }
+.save-img[hidden] { display: none; }
+.save-img img { display: block; width: 100%; max-width: 420px; justify-self: center; border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
 .msg { font-size: 13px; min-height: 1.6em; margin: 0; }
 .msg.err { color: var(--danger); }
 .msg.ok { color: var(--ok); }
@@ -268,6 +271,10 @@ button.btn.danger { color: var(--danger); }
       <button type="button" class="btn primary" id="download">この内容で画像をダウンロード（PNG）</button>
     </div>
     <p class="msg" id="msg" role="status"></p>
+    <div class="save-img" id="saveImg" hidden>
+      <p class="hint">この画面ではファイルを直接保存できないため、完成画像を表示しました。画像を長押し（パソコンは右クリック）して「画像を保存」してください。</p>
+      <img id="saveImgEl" alt="完成したプロフィール画像">
+    </div>
   </section>
 </main>
 
@@ -448,6 +455,14 @@ button.btn.danger { color: var(--danger); }
     return items.length ? h - rg : 0;
   }
 
+  // 名前は1行に収まるよう文字サイズを縮める（最小で基準の6割、それでも長ければ折り返す）
+  function nameSize(L, str, w, base) {
+    ctx.font = L.font(900, base * L.U);
+    if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    const tw = ctx.measureText(str).width;
+    return tw > w ? Math.max(base * .6, base * w / tw * .98) : base;
+  }
+
   // 年齢・地域・職業・家族構成
   const infoGrid = (L, x, y, w, cols, d, align) =>
     kvGrid(L, x, y, w, cols, [['年齢', fmtAge(d.age)], ['地域', d.area], ['職業', d.job], ['家族構成', d.family]], align);
@@ -542,7 +557,7 @@ button.btn.danger { color: var(--danger); }
       let ly = top;
       if (L.draw) drawPhoto('member', pad + (lw - dd) / 2, ly, dd, L.col, .012 * U);
       ly += dd + .03 * U;
-      ly += L.text(pad, ly, lw, d.name, .066, 900, L.col.name, 1.25, 'center');
+      ly += L.text(pad, ly, lw, d.name, nameSize(L, d.name, lw, .066), 900, L.col.name, 1.25, 'center');
       ly += .025 * U;
       ly += infoGrid(L, pad, ly, lw, 2, d, 'center');
       ly += .04 * U;
@@ -559,14 +574,15 @@ button.btn.danger { color: var(--danger); }
     const dd = .3 * U;
     const tx = pad + dd + .05 * U, tw = W - pad - tx;
     const ghost = makeL(false, L.s, L.u, L.fam, L.col);
-    const nameH = ghost.text(tx, 0, tw, d.name, .072, 900, L.col.name, 1.25);
+    const ns = nameSize(L, d.name, tw, .072);
+    const nameH = ghost.text(tx, 0, tw, d.name, ns, 900, L.col.name, 1.25);
     const infoH = infoGrid(ghost, tx, 0, tw, 2, d);
     const rightH = nameH + (infoH ? .025 * U + infoH : 0);
     const heroH = Math.max(dd, rightH);
     if (L.draw) {
       drawPhoto('member', pad, top + (heroH - dd) / 2, dd, L.col, .012 * U);
       const ry = top + (heroH - rightH) / 2;
-      L.text(tx, ry, tw, d.name, .072, 900, L.col.name, 1.25);
+      L.text(tx, ry, tw, d.name, ns, 900, L.col.name, 1.25);
       infoGrid(L, tx, ry + nameH + .025 * U, tw, 2, d);
     }
     let y = top + heroH + .04 * U;
@@ -617,6 +633,8 @@ button.btn.danger { color: var(--danger); }
 
   let raf = 0;
   const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); };
+  // 入力が変わったら、前に表示した完成画像は古いので隠す
+  const edited = () => { $('#saveImg').hidden = true; schedule(); };
 
   // ---------- 写真入力（メンバー・紹介者） ----------
   const dims = (src) => [src.naturalWidth || src.width, src.naturalHeight || src.height];
@@ -686,7 +704,7 @@ button.btn.danger { color: var(--danger); }
   function closeCrop(apply) {
     if (apply) {
       Object.assign(cr.p, { rot: cr.rot, src: cr.src, crop: cr.crop });
-      drawThumb(cr.blk, cr.p); schedule();
+      drawThumb(cr.blk, cr.p); edited();
     }
     $('#cropper').hidden = true;
     document.body.style.overflow = '';
@@ -773,14 +791,14 @@ button.btn.danger { color: var(--danger); }
   const setColor = (c) => {
     state.color = c; $('#color').value = c;
     sw.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === c)));
-    schedule();
+    edited();
   };
   sw.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setColor(b.dataset.c); });
   $('#color').addEventListener('input', (e) => setColor(e.target.value));
 
   // ---------- 入力変更 ----------
-  $('#form').addEventListener('input', (e) => { if (e.target.type !== 'file' && e.target.type !== 'color') schedule(); });
-  $('#form').addEventListener('change', schedule);
+  $('#form').addEventListener('input', (e) => { if (e.target.type !== 'file' && e.target.type !== 'color') edited(); });
+  $('#form').addEventListener('change', edited);
   $('#form').addEventListener('submit', (e) => e.preventDefault());
 
   const today = () => { const t = new Date(), z = (n) => String(n).padStart(2, '0'); return t.getFullYear() + '-' + z(t.getMonth() + 1) + '-' + z(t.getDate()); };
@@ -795,7 +813,7 @@ button.btn.danger { color: var(--danger); }
     $('#date').value = today();
     document.querySelectorAll('input[type="checkbox"]').forEach((c) => { c.checked = false; });
     document.querySelectorAll('.photo-block').forEach((blk) => blk.reset());
-    clearBtns(false); showMsg(''); schedule();
+    clearBtns(false); showMsg(''); edited();
     $('#name').focus();
   });
 
@@ -807,9 +825,16 @@ button.btn.danger { color: var(--danger); }
     if (!d.name) showMsg(NEED_NAME);
     else if ($('#msg').textContent === NEED_NAME) showMsg('');
   }
-  let downloadsApi = null;
-  if (window.claude && typeof window.claude.use === 'function') {
-    window.claude.use('downloads').then((api) => { downloadsApi = api; }).catch(() => {});
+  // Claude のアーティファクト内では downloads 機能で保存する（使えない閲覧者には画像を表示して手動保存）
+  const inArtifact = !!(window.claude && typeof window.claude.use === 'function');
+  const downloadsReady = inArtifact ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+  let saveImgUrl = null;
+  function showSaveImage(blob) {
+    if (saveImgUrl) URL.revokeObjectURL(saveImgUrl);
+    saveImgUrl = URL.createObjectURL(blob);
+    $('#saveImgEl').src = saveImgUrl;
+    $('#saveImg').hidden = false;
+    showMsg('');
   }
   $('#download').addEventListener('click', () => {
     render();
@@ -818,9 +843,15 @@ button.btn.danger { color: var(--danger); }
     const filename = 'profile_' + t.getFullYear() + z(t.getMonth() + 1) + z(t.getDate()) + '_' + z(t.getHours()) + z(t.getMinutes()) + z(t.getSeconds()) + '.png';
     canvas.toBlob(async (blob) => {
       if (!blob) { showMsg('画像を作れませんでした。もう一度お試しください。', 'err'); return; }
-      if (downloadsApi) {
-        try { await downloadsApi.save({ filename, data: blob }); showMsg('「' + filename + '」を保存しました。', 'ok'); }
-        catch (err) { showMsg(err && err.code === 'declined' ? '保存をキャンセルしました。' : '保存できませんでした（' + (err && err.code || 'エラー') + '）。', 'err'); }
+      if (inArtifact) {
+        const api = await downloadsReady;
+        if (!api) { showSaveImage(blob); return; }
+        try { await api.save({ filename, data: blob }); showMsg('「' + filename + '」を保存しました。', 'ok'); }
+        catch (err) {
+          if (err && err.code === 'declined') showMsg('保存をキャンセルしました。');
+          else if (err && err.code === 'rate_limited') showMsg('保存の確認画面がすでに開いています。少し待ってからもう一度押してください。', 'err');
+          else showSaveImage(blob);
+        }
         return;
       }
       const a = document.createElement('a');
