@@ -199,6 +199,7 @@ button.btn.danger { color: var(--danger); }
           <label><input type="checkbox" name="pbs" value="青P"><span>青P</span></label>
           <label><input type="checkbox" name="pbs" value="石P"><span>石P</span></label>
           <label><input type="checkbox" name="pbs" value="古P"><span>古P</span></label>
+          <label><input type="checkbox" name="pbs" value="岩P"><span>岩P</span></label>
         </div>
       </div>
     </section>
@@ -317,7 +318,7 @@ button.btn.danger { color: var(--danger); }
   };
   const PRESETS = ['#2f6fed', '#e2546b', '#f08a24', '#2a9d6f', '#7b5cd6', '#3a4256'];
   const TSUNAGI = ['宮', '吉', '佐', '矢'];
-  const PBS = ['青P', '石P', '古P'];
+  const PBS = ['青P', '石P', '古P', '岩P'];
   const TEXT_IDS = ['name', 'age', 'area', 'job', 'family', 'needs', 'character', 'reason', 'other', 'introducer', 'group', 'introAge', 'introArea', 'introJob'];
 
   const state = { color: PRESETS[0], photos: { member: newPhoto(), intro: newPhoto() } };
@@ -484,10 +485,16 @@ button.btn.danger { color: var(--danger); }
 
   // チェック項目（全選択肢を表示し、チェック済みを塗りつぶす）
   function chipRow(L, x, y, w, label, opts, on) {
-    const U = L.U, px = .026 * U, h = .058 * U, padX = .022 * U, g = .012 * U, lw = .14 * U;
-    L.text(x, y + (h - px * 1.4) / 2, lw, label, .026, 700, L.col.muted, 1.4);
+    const U = L.U, px = .026 * U, h = .058 * U, padX = .022 * U, g = .012 * U;
     ctx.font = L.font(700, px);
-    let cx = x + lw, cy = y;
+    if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    const chipsW = opts.reduce((a, o) => a + padX * 2 + px * 1.15 + ctx.measureText(o).width + g, -g);
+    // 項目名の横に収まらないときは、項目名を上に置いてチップを1行に並べる
+    let lw = .14 * U, top = y;
+    if (lw + chipsW > w && chipsW <= w) { top += L.text(x, y, w, label, .026, 700, L.col.muted, 1.4) + .006 * U; lw = 0; }
+    else L.text(x, y + (h - px * 1.4) / 2, lw, label, .026, 700, L.col.muted, 1.4);
+    ctx.font = L.font(700, px);
+    let cx = x + lw, cy = top;
     for (const o of opts) {
       const box = px * .8;
       const cw = padX * 2 + box + px * .35 + ctx.measureText(o).width;
