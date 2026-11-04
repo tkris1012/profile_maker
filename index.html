@@ -525,8 +525,11 @@ button.btn.danger { color: var(--danger); }
       const U = M.U, p = .03 * U, pw = .13 * U, dd = pw * PHOTO_AR;
       const tx = x + p + pw + .035 * U, tw = w - p * 2 - pw - .035 * U;
       const block = (B, ty) => {
-        // 下の段（年齢・地域・職業）と同じ3列の格子に置き、グループを地域の位置にそろえる
-        let h = kvGrid(B, tx, ty, tw, 3, [['紹介者', d.introducer || '—'], ['グループ', d.group || '—']], 'left', .032);
+        // 下の段（年齢・地域・職業）と同じ3列の格子にそろえる。グループは地域〜職業の2列分を使う
+        const g = .03 * U, cw = (tw - g * 2) / 3;
+        let h = Math.max(
+          kvGrid(B, tx, ty, cw, 1, [['紹介者', d.introducer || '—']], 'left', .032),
+          kvGrid(B, tx + cw + g, ty, cw * 2 + g, 1, [['グループ', d.group || '—']], 'left', .032));
         const sub = [['年齢', fmtAge(d.introAge)], ['地域', d.introArea], ['職業', d.introJob]];
         if (sub.some(([, v]) => v)) h += .022 * U + kvGrid(B, tx, ty + h + .022 * U, tw, 3, sub, 'left', .028);
         return h;
