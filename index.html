@@ -522,7 +522,7 @@ button.btn.danger { color: var(--danger); }
   // 紹介者の情報（背景つきパネル）
   function introPanel(L, x, y, w, d) {
     const inner = (M, draw) => {
-      const U = M.U, p = .035 * U, pw = .12 * U, dd = pw * PHOTO_AR;
+      const U = M.U, p = .03 * U, pw = .13 * U, dd = pw * PHOTO_AR;
       const tx = x + p + pw + .035 * U, tw = w - p * 2 - pw - .035 * U;
       const block = (B, ty) => {
         let h = kvGrid(B, tx, ty, tw, 2, [['紹介者', d.introducer || '—'], ['グループ', d.group || '—']], 'left', .032);
@@ -552,7 +552,7 @@ button.btn.danger { color: var(--danger); }
   // 写真の幅は、右の列につなぎ・PBSのチップが1行で収まる幅を残して残りを使う。
   // 高さの上限 maxPh は文字の縮小率に連動させない（内容が多くても写真は小さくしない）
   function hero(L, x, top, w, d, maxPh) {
-    const U = L.U, gap = .045 * U;
+    const U = L.U, gap = .035 * U;
     const need = Math.max(chipsWidth(L, TSUNAGI), chipsWidth(L, PBS), .3 * U) * 1.02;
     const pw = Math.max(.28 * U, Math.min(maxPh / PHOTO_AR, w - gap - need)), ph = pw * PHOTO_AR;
     const tx = x + pw + gap, tw = x + w - tx;
@@ -576,30 +576,30 @@ button.btn.danger { color: var(--danger); }
   }
 
   function layout(L, d, top) {
-    const U = L.U, pad = .065 * L.u;
+    const U = L.U, pad = .045 * L.u;
     const ghost = makeL(false, L.s, L.u, L.fam, L.col);
     // 上からメンバー → 詳細 → 紹介パネル
     const w = W - pad * 2;
     let y = top + hero(L, pad, top, w, d, W * .75);
     const secH = sections(ghost, pad, 0, w, d);
     if (secH) {
-      y += .04 * U;
+      y += .03 * U;
       if (L.draw) { ctx.fillStyle = L.col.line; ctx.fillRect(pad, y, w, 2); }
-      y += .04 * U;
+      y += .03 * U;
       sections(L, pad, y, w, d);
       y += secH;
     }
     const ip = introPanel({ ...L, draw: false, text: ghost.text }, pad, 0, w, d);
-    if (L.draw) introPanel(L, pad, y + .045 * U, w, d);
-    return y + .045 * U + ip - top;
+    if (L.draw) introPanel(L, pad, y + .035 * U, w, d);
+    return y + .035 * U + ip - top;
   }
 
   function render() {
     const d = data();
-    const u = W, pad = .065 * u;
+    const u = W, pad = .045 * u;
     const col = palette(d.tpl, state.color);
     const fam = FONT;
-    const hh = .1 * u, top = hh + pad * .75;
+    const hh = .1 * u, top = hh + pad;
     // 文字は縮めずに中身の高さを測り、画像の高さをそれに合わせる
     const H = Math.ceil(top + layout(makeL(false, 1, u, fam, col), d, top) + pad * .9);
     if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
