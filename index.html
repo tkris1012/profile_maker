@@ -73,7 +73,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   border-radius: 10px; background: var(--field); cursor: pointer;
 }
 .drop.over { border-color: var(--accent); }
-.drop .thumb { width: 64px; height: 64px; border-radius: 50%; background: var(--line); flex: none; }
+.drop .thumb { width: 48px; height: 64px; border-radius: 6px; background: var(--line); flex: none; }
 .drop .txt { min-width: 0; font-size: 13px; }
 .drop .txt b { display: block; }
 .drop .txt span { color: var(--muted); font-size: 12px; }
@@ -170,7 +170,7 @@ button.btn.danger { color: var(--danger); }
       <h2>メンバー</h2>
       <div class="photo-block" data-photo="member">
         <label class="drop" for="photo-member">
-          <canvas class="thumb" width="128" height="128"></canvas>
+          <canvas class="thumb" width="96" height="128"></canvas>
           <span class="txt"><b class="plabel">メンバー写真を選ぶ</b><span>タップして選択、またはここにドラッグ＆ドロップ</span></span>
         </label>
         <input type="file" id="photo-member" class="pfile" accept="image/*">
@@ -217,7 +217,7 @@ button.btn.danger { color: var(--danger); }
       <h2>紹介</h2>
       <div class="photo-block" data-photo="intro">
         <label class="drop" for="photo-intro">
-          <canvas class="thumb" width="128" height="128"></canvas>
+          <canvas class="thumb" width="96" height="128"></canvas>
           <span class="txt"><b class="plabel">紹介者写真を選ぶ</b><span>タップして選択、またはここにドラッグ＆ドロップ</span></span>
         </label>
         <input type="file" id="photo-intro" class="pfile" accept="image/*">
@@ -283,7 +283,7 @@ button.btn.danger { color: var(--danger); }
 <div class="cropper" id="cropper" hidden role="dialog" aria-modal="true" aria-labelledby="cropTitle">
   <div class="crop-box">
     <h2 id="cropTitle">写真のトリミング</h2>
-    <p class="hint">枠の中をドラッグで移動、四隅の●をドラッグで大きさを変更できます。丸の内側が画像に入ります。</p>
+    <p class="hint">枠の中をドラッグで移動、四隅の●をドラッグで大きさを変更できます。明るい枠の内側が画像に入ります。</p>
     <div class="crop-stage"><canvas id="cropCanvas" aria-label="トリミング範囲"></canvas></div>
     <div class="range">
       <span>枠の大きさ</span>
@@ -311,6 +311,7 @@ button.btn.danger { color: var(--danger); }
   const canvas = $('#card');
   const ctx = canvas.getContext('2d');
 
+  const PHOTO_AR = 4 / 3; // 写真の縦横比（高さ÷幅）：縦長の四角
   const SIZES = { portrait: [1080, 1350], square: [1080, 1080], story: [1080, 1920], landscape: [1600, 900] };
   const FONTS = {
     sans: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',
@@ -396,21 +397,23 @@ button.btn.danger { color: var(--danger); }
   }
 
   // ---------- 写真（円形） ----------
-  function drawPhoto(key, x, y, dd, col, ringW) {
+  // pw は写真の幅。高さは pw × PHOTO_AR
+  function drawPhoto(key, x, y, pw, col, ringW) {
     const p = state.photos[key];
+    const ph = pw * PHOTO_AR, r = pw * .04; // 角をわずかに丸めた四角
     ctx.save();
-    ctx.beginPath(); ctx.arc(x + dd / 2, y + dd / 2, dd / 2, 0, Math.PI * 2); ctx.clip();
+    rrect(x, y, pw, ph, r); ctx.clip();
     if (p.src) {
       const c = p.crop;
-      ctx.drawImage(p.src, c.x, c.y, c.s, c.s, x, y, dd, dd);
+      ctx.drawImage(p.src, c.x, c.y, c.s, c.s * PHOTO_AR, x, y, pw, ph);
     } else {
-      ctx.fillStyle = col.placeholder; ctx.fillRect(x, y, dd, dd);
+      ctx.fillStyle = col.placeholder; ctx.fillRect(x, y, pw, ph);
       ctx.fillStyle = col.placeholderIcon;
-      ctx.beginPath(); ctx.arc(x + dd / 2, y + dd * .42, dd * .18, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(x + dd / 2, y + dd * .92, dd * .34, dd * .3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + pw / 2, y + ph * .42, pw * .2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x + pw / 2, y + ph * .95, pw * .38, pw * .34, 0, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
-    if (ringW) { ctx.beginPath(); ctx.arc(x + dd / 2, y + dd / 2, dd / 2, 0, Math.PI * 2); ctx.lineWidth = ringW; ctx.strokeStyle = col.ring; ctx.stroke(); }
+    if (ringW) { rrect(x, y, pw, ph, r); ctx.lineWidth = ringW; ctx.strokeStyle = col.ring; ctx.stroke(); }
   }
 
   // ---------- レイアウト部品（draw=false なら高さだけ返す） ----------
@@ -485,15 +488,11 @@ button.btn.danger { color: var(--danger); }
 
   // チェック項目（全選択肢を表示し、チェック済みを塗りつぶす）
   function chipRow(L, x, y, w, label, opts, on) {
-    const U = L.U, px = .026 * U, h = .058 * U, padX = .022 * U, g = .012 * U;
+    const U = L.U, px = .026 * U, h = .058 * U, padX = .016 * U, g = .01 * U, lw = 0;
+    // 見出しは年齢・地域などと同じ書式で上に置く
+    const top = y + L.text(x, y, w, label, .022, 700, L.col.muted, 1.5, 'left', .08) + .004 * U;
     ctx.font = L.font(700, px);
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-    const chipsW = opts.reduce((a, o) => a + padX * 2 + px * 1.15 + ctx.measureText(o).width + g, -g);
-    // 項目名の横に収まらないときは、項目名を上に置いてチップを1行に並べる
-    let lw = .14 * U, top = y;
-    if (lw + chipsW > w && chipsW <= w) { top += L.text(x, y, w, label, .026, 700, L.col.muted, 1.4) + .006 * U; lw = 0; }
-    else L.text(x, y + (h - px * 1.4) / 2, lw, label, .026, 700, L.col.muted, 1.4);
-    ctx.font = L.font(700, px);
     let cx = x + lw, cy = top;
     for (const o of opts) {
       const box = px * .8;
@@ -523,15 +522,15 @@ button.btn.danger { color: var(--danger); }
   // メンバーのつなぎ・PBS
   function memberChecks(L, x, y, w, d) {
     let h = chipRow(L, x, y, w, 'つなぎ', TSUNAGI, d.tsunagi);
-    h += .016 * L.U;
+    h += .022 * L.U;
     return h + chipRow(L, x, y + h, w, 'PBS', PBS, d.pbs);
   }
 
   // 紹介者の情報（背景つきパネル）
   function introPanel(L, x, y, w, d) {
     const inner = (M, draw) => {
-      const U = M.U, p = .035 * U, dd = .14 * U;
-      const tx = x + p + dd + .035 * U, tw = w - p * 2 - dd - .035 * U;
+      const U = M.U, p = .035 * U, pw = .12 * U, dd = pw * PHOTO_AR;
+      const tx = x + p + pw + .035 * U, tw = w - p * 2 - pw - .035 * U;
       const block = (B, ty) => {
         let h = kvGrid(B, tx, ty, tw, 2, [['紹介者', d.introducer || '—'], ['グループ', d.group || '—']], 'left', .032);
         const sub = [['年齢', fmtAge(d.introAge)], ['地域', d.introArea], ['職業', d.introJob]];
@@ -540,7 +539,7 @@ button.btn.danger { color: var(--danger); }
       };
       const th = block(makeL(false, M.s, M.u, M.fam, M.col), 0);
       if (draw) {
-        drawPhoto('intro', x + p, y + p + Math.max(0, (th - dd) / 2), dd, M.col, 0);
+        drawPhoto('intro', x + p, y + p + Math.max(0, (th - dd) / 2), pw, M.col, 0);
         block(M, y + p + Math.max(0, (dd - th) / 2));
       }
       return p * 2 + Math.max(dd, th);
@@ -556,47 +555,47 @@ button.btn.danger { color: var(--danger); }
   }
 
   // ---------- 全体 ----------
-  function layout(L, W, H, d, top, bottom) {
-    const U = L.U, pad = .065 * L.u;
-    if (W / H > 1.2) { // 横長: 左にメンバー、右に詳細と紹介
-      const lw = W * .32, rx = pad + lw + W * .045, rw = W - pad - rx;
-      const dd = Math.min(.36 * U, lw * .8);
-      let ly = top;
-      if (L.draw) drawPhoto('member', pad + (lw - dd) / 2, ly, dd, L.col, .012 * U);
-      ly += dd + .03 * U;
-      ly += L.text(pad, ly, lw, d.kana, .024, 700, L.col.muted, 1.4, 'center', .1);
-      ly += L.text(pad, ly, lw, d.name, nameSize(L, d.name, lw, .066), 900, L.col.name, 1.25, 'center');
-      ly += .025 * U;
-      ly += infoGrid(L, pad, ly, lw, 2, d, 'center');
-      ly += .04 * U;
-      ly += memberChecks(L, pad, ly, lw, d);
-      if (L.draw) { ctx.fillStyle = L.col.line; ctx.fillRect(pad + lw + W * .0225, top, 2, bottom - top); }
-      const secH = sections(L, rx, top, rw, d);
-      const ip = introPanel({ ...L, draw: false, text: makeL(false, L.s, L.u, L.fam, L.col).text }, rx, 0, rw, d);
-      const iy = Math.max(top + secH + .04 * U, bottom - ip);
-      if (L.draw) introPanel(L, rx, iy, rw, d);
-      return Math.max(ly, top + secH + (secH ? .04 * U : 0) + ip) - top;
-    }
-    // 縦長・正方形: 上からメンバー → 詳細 → 紹介パネル（下寄せ）
-    const w = W - pad * 2;
-    const dd = .3 * U;
-    const tx = pad + dd + .05 * U, tw = W - pad - tx;
+  // 写真＋右側の列（フリガナ・名前・年齢など・つなぎ・PBS）。高さを返す
+  function hero(L, x, top, w, d, pw) {
+    const U = L.U, ph = pw * PHOTO_AR;
+    const tx = x + pw + .045 * U, tw = x + w - tx;
     const ghost = makeL(false, L.s, L.u, L.fam, L.col);
     const ns = nameSize(L, d.name, tw, .072);
     const kanaH = ghost.text(tx, 0, tw, d.kana, .024, 700, L.col.muted, 1.4, 'left', .1);
     const nameH = kanaH + ghost.text(tx, 0, tw, d.name, ns, 900, L.col.name, 1.25);
     const infoH = infoGrid(ghost, tx, 0, tw, 2, d);
-    const rightH = nameH + (infoH ? .025 * U + infoH : 0);
-    const heroH = Math.max(dd, rightH);
+    const chkH = memberChecks(ghost, tx, 0, tw, d);
+    const infoY = nameH + .025 * U, chkY = infoY + (infoH ? infoH + .022 * U : 0);
+    const rightH = chkY + chkH;
     if (L.draw) {
-      drawPhoto('member', pad, top + (heroH - dd) / 2, dd, L.col, .012 * U);
-      const ry = top + (heroH - rightH) / 2;
+      drawPhoto('member', x, top, pw, L.col, .01 * U);
+      const ry = top + Math.max(0, (ph - rightH) / 2);
       L.text(tx, ry, tw, d.kana, .024, 700, L.col.muted, 1.4, 'left', .1);
       L.text(tx, ry + kanaH, tw, d.name, ns, 900, L.col.name, 1.25);
-      infoGrid(L, tx, ry + nameH + .025 * U, tw, 2, d);
+      infoGrid(L, tx, ry + infoY, tw, 2, d);
+      memberChecks(L, tx, ry + chkY, tw, d);
     }
-    let y = top + heroH + .04 * U;
-    y += memberChecks(L, pad, y, w, d);
+    return Math.max(ph, rightH);
+  }
+
+  function layout(L, W, H, d, top, bottom) {
+    const U = L.U, pad = .065 * L.u;
+    const ghost = makeL(false, L.s, L.u, L.fam, L.col);
+    if (W / H > 1.2) { // 横長: 左にメンバーと紹介、右に詳細
+      const lw = W * .5, rx = pad + lw + W * .045, rw = W - pad - rx;
+      const heroH = hero(L, pad, top, lw, d, .3 * U);
+      const ip = introPanel({ ...L, draw: false, text: ghost.text }, pad, 0, lw, d);
+      const iy = Math.max(top + heroH + .04 * U, bottom - ip);
+      if (L.draw) {
+        introPanel(L, pad, iy, lw, d);
+        ctx.fillStyle = L.col.line; ctx.fillRect(pad + lw + W * .0225, top, 2, bottom - top);
+      }
+      const secH = sections(L, rx, top, rw, d);
+      return Math.max(heroH + .04 * U + ip, secH);
+    }
+    // 縦長・正方形: 上からメンバー → 詳細 → 紹介パネル
+    const w = W - pad * 2;
+    let y = top + hero(L, pad, top, w, d, .36 * U);
     const secH = sections(ghost, pad, 0, w, d);
     if (secH) {
       y += .04 * U;
@@ -633,7 +632,7 @@ button.btn.danger { color: var(--danger); }
 
     const top = hh + pad * .75, bottom = H - pad * .9;
     // 収まる最大の文字倍率を探し、余白は上下に均等配分
-    let s = 1.2, need;
+    let s = 1, need;
     while ((need = layout(makeL(false, s, u, fam, col), W, H, d, top, bottom)) > bottom - top && s > .5) s -= .03;
     const off = W / H > 1.2 ? 0 : Math.max(0, (bottom - top - need) / 2);
     layout(makeL(true, s, u, fam, col), W, H, d, top + off, bottom);
@@ -656,11 +655,12 @@ button.btn.danger { color: var(--danger); }
     g.translate(c.width / 2, c.height / 2); g.rotate(rot * Math.PI / 2); g.drawImage(img, -w / 2, -h / 2);
     return c;
   }
-  function fullCrop(src) { const [w, h] = dims(src), m = Math.min(w, h); return { x: (w - m) / 2, y: (h - m) / 2, s: m }; }
+  const maxCropW = (src) => { const [w, h] = dims(src); return Math.min(w, h / PHOTO_AR); };
+  function fullCrop(src) { const [w, h] = dims(src), m = maxCropW(src); return { x: (w - m) / 2, y: (h - m * PHOTO_AR) / 2, s: m }; }
   function drawThumb(blk, p) {
     const t = $('.thumb', blk), g = t.getContext('2d');
     g.clearRect(0, 0, t.width, t.height);
-    if (p.src) g.drawImage(p.src, p.crop.x, p.crop.y, p.crop.s, p.crop.s, 0, 0, t.width, t.height);
+    if (p.src) g.drawImage(p.src, p.crop.x, p.crop.y, p.crop.s, p.crop.s * PHOTO_AR, 0, 0, t.width, t.height);
   }
 
   document.querySelectorAll('.photo-block').forEach((blk) => {
@@ -700,7 +700,7 @@ button.btn.danger { color: var(--danger); }
   const cc = $('#cropCanvas'), cg = cc.getContext('2d');
   const cr = { blk: null, p: null, rot: 0, src: null, crop: null, k: 1, dpr: 1, opener: null };
   const CM = 14; // 角の●が画像の外にはみ出しても掴めるよう、画像の周りに余白を取る（CSS px）
-  const corners = (c) => [[c.x, c.y], [c.x + c.s, c.y], [c.x + c.s, c.y + c.s], [c.x, c.y + c.s]];
+  const corners = (c) => { const ch = c.s * PHOTO_AR; return [[c.x, c.y], [c.x + c.s, c.y], [c.x + c.s, c.y + ch], [c.x, c.y + ch]]; };
   const minSize = () => Math.max(16, Math.min(...dims(cr.src)) * .04);
 
   function openCrop(blk, p) {
@@ -734,19 +734,19 @@ button.btn.danger { color: var(--danger); }
     cg.setTransform(cr.dpr * k, 0, 0, cr.dpr * k, CM * cr.dpr, CM * cr.dpr);
     cg.drawImage(cr.src, 0, 0);
     cg.fillStyle = 'rgba(0,0,0,.55)';
-    cg.beginPath(); cg.rect(0, 0, w, h); cg.arc(c.x + c.s / 2, c.y + c.s / 2, c.s / 2, 0, Math.PI * 2); cg.fill('evenodd');
-    cg.lineWidth = 2 / k; cg.strokeStyle = 'rgba(255,255,255,.9)'; cg.strokeRect(c.x, c.y, c.s, c.s);
+    cg.beginPath(); cg.rect(0, 0, w, h); cg.rect(c.x, c.y, c.s, c.s * PHOTO_AR); cg.fill('evenodd');
+    cg.lineWidth = 2 / k; cg.strokeStyle = 'rgba(255,255,255,.9)'; cg.strokeRect(c.x, c.y, c.s, c.s * PHOTO_AR);
     for (const [hx, hy] of corners(c)) {
       cg.beginPath(); cg.arc(hx, hy, 9 / k, 0, Math.PI * 2);
       cg.fillStyle = '#ffffff'; cg.fill(); cg.strokeStyle = 'rgba(0,0,0,.45)'; cg.stroke();
     }
-    $('#cropSize').value = c.s / Math.min(w, h);
+    $('#cropSize').value = c.s / maxCropW(cr.src);
   }
   function setCropSize(sz) { // 中心を保ったまま大きさを変える
     const [w, h] = dims(cr.src), c = cr.crop;
-    const cx = c.x + c.s / 2, cy = c.y + c.s / 2;
-    c.s = clamp(sz, minSize(), Math.min(w, h));
-    c.x = clamp(cx - c.s / 2, 0, w - c.s); c.y = clamp(cy - c.s / 2, 0, h - c.s);
+    const cx = c.x + c.s / 2, cy = c.y + c.s * PHOTO_AR / 2;
+    c.s = clamp(sz, minSize(), maxCropW(cr.src));
+    c.x = clamp(cx - c.s / 2, 0, w - c.s); c.y = clamp(cy - c.s * PHOTO_AR / 2, 0, h - c.s * PHOTO_AR);
     drawCrop();
   }
 
@@ -758,7 +758,7 @@ button.btn.danger { color: var(--danger); }
     if (i >= 0) {
       const [ax, ay] = cs[(i + 2) % 4];
       cd = { mode: 'resize', ax, ay, sx: Math.sign(cs[i][0] - ax), sy: Math.sign(cs[i][1] - ay) };
-    } else if (px >= c.x && px <= c.x + c.s && py >= c.y && py <= c.y + c.s) {
+    } else if (px >= c.x && px <= c.x + c.s && py >= c.y && py <= c.y + c.s * PHOTO_AR) {
       cd = { mode: 'move', px, py, x0: c.x, y0: c.y };
     } else return;
     cc.setPointerCapture(e.pointerId);
@@ -768,11 +768,11 @@ button.btn.danger { color: var(--danger); }
     const [px, py] = toImg(e), [w, h] = dims(cr.src), c = cr.crop;
     if (cd.mode === 'move') {
       c.x = clamp(cd.x0 + px - cd.px, 0, w - c.s);
-      c.y = clamp(cd.y0 + py - cd.py, 0, h - c.s);
-    } else { // 対角の角を固定して正方形のまま拡大縮小
-      const room = Math.min(cd.sx > 0 ? w - cd.ax : cd.ax, cd.sy > 0 ? h - cd.ay : cd.ay);
-      const sz = clamp(Math.max((px - cd.ax) * cd.sx, (py - cd.ay) * cd.sy), minSize(), room);
-      c.s = sz; c.x = cd.sx > 0 ? cd.ax : cd.ax - sz; c.y = cd.sy > 0 ? cd.ay : cd.ay - sz;
+      c.y = clamp(cd.y0 + py - cd.py, 0, h - c.s * PHOTO_AR);
+    } else { // 対角の角を固定して縦横比を保ったまま拡大縮小
+      const room = Math.min(cd.sx > 0 ? w - cd.ax : cd.ax, (cd.sy > 0 ? h - cd.ay : cd.ay) / PHOTO_AR);
+      const sz = clamp(Math.max((px - cd.ax) * cd.sx, (py - cd.ay) * cd.sy / PHOTO_AR), minSize(), room);
+      c.s = sz; c.x = cd.sx > 0 ? cd.ax : cd.ax - sz; c.y = cd.sy > 0 ? cd.ay : cd.ay - sz * PHOTO_AR;
     }
     drawCrop();
   });
@@ -780,7 +780,7 @@ button.btn.danger { color: var(--danger); }
   cc.addEventListener('pointerup', endCrop);
   cc.addEventListener('pointercancel', endCrop);
   cc.addEventListener('wheel', (e) => { e.preventDefault(); setCropSize(cr.crop.s * (e.deltaY > 0 ? 1.06 : 1 / 1.06)); }, { passive: false });
-  $('#cropSize').addEventListener('input', (e) => setCropSize(+e.target.value * Math.min(...dims(cr.src))));
+  $('#cropSize').addEventListener('input', (e) => setCropSize(+e.target.value * maxCropW(cr.src)));
   $('#cropRotate').addEventListener('click', () => {
     cr.rot = (cr.rot + 1) % 4; cr.src = rotated(cr.p.orig, cr.rot); cr.crop = fullCrop(cr.src); layoutCrop();
   });
