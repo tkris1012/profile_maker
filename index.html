@@ -487,6 +487,14 @@ button.btn.danger { color: var(--danger); }
   }
 
   // チェック項目（全選択肢を表示し、チェック済みを塗りつぶす）
+  // チップを1行に並べたときの幅（chipRow と同じ寸法）
+  function chipsWidth(L, opts) {
+    const U = L.U, px = .026 * U, padX = .016 * U, g = .01 * U;
+    ctx.font = L.font(700, px);
+    if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    return opts.reduce((a, o) => a + padX * 2 + px * 1.15 + ctx.measureText(o).width + g, -g);
+  }
+
   function chipRow(L, x, y, w, label, opts, on) {
     const U = L.U, px = .026 * U, h = .058 * U, padX = .016 * U, g = .01 * U, lw = 0;
     // 見出しは年齢・地域などと同じ書式で上に置く
@@ -556,9 +564,13 @@ button.btn.danger { color: var(--danger); }
 
   // ---------- 全体 ----------
   // 写真＋右側の列（フリガナ・名前・年齢など・つなぎ・PBS）。高さを返す
-  function hero(L, x, top, w, d, pw) {
-    const U = L.U, ph = pw * PHOTO_AR;
-    const tx = x + pw + .045 * U, tw = x + w - tx;
+  // 写真の幅は、右の列につなぎ・PBSのチップが1行で収まる幅を残して残りを使う。
+  // 高さの上限 maxPh は文字の縮小率に連動させない（内容が多くても写真は小さくしない）
+  function hero(L, x, top, w, d, maxPh) {
+    const U = L.U, gap = .045 * U;
+    const need = Math.max(chipsWidth(L, TSUNAGI), chipsWidth(L, PBS), .3 * U) * 1.02;
+    const pw = Math.max(.28 * U, Math.min(maxPh / PHOTO_AR, w - gap - need)), ph = pw * PHOTO_AR;
+    const tx = x + pw + gap, tw = x + w - tx;
     const ghost = makeL(false, L.s, L.u, L.fam, L.col);
     const ns = nameSize(L, d.name, tw, .072);
     const kanaH = ghost.text(tx, 0, tw, d.kana, .024, 700, L.col.muted, 1.4, 'left', .1);
@@ -583,7 +595,7 @@ button.btn.danger { color: var(--danger); }
     const ghost = makeL(false, L.s, L.u, L.fam, L.col);
     if (W / H > 1.2) { // 横長: 左にメンバーと紹介、右に詳細
       const lw = W * .5, rx = pad + lw + W * .045, rw = W - pad - rx;
-      const heroH = hero(L, pad, top, lw, d, .3 * U);
+      const heroH = hero(L, pad, top, lw, d, (bottom - top) * .6);
       const ip = introPanel({ ...L, draw: false, text: ghost.text }, pad, 0, lw, d);
       const iy = Math.max(top + heroH + .04 * U, bottom - ip);
       if (L.draw) {
@@ -595,7 +607,7 @@ button.btn.danger { color: var(--danger); }
     }
     // 縦長・正方形: 上からメンバー → 詳細 → 紹介パネル
     const w = W - pad * 2;
-    let y = top + hero(L, pad, top, w, d, .36 * U);
+    let y = top + hero(L, pad, top, w, d, (bottom - top) * .5);
     const secH = sections(ghost, pad, 0, w, d);
     if (secH) {
       y += .04 * U;
