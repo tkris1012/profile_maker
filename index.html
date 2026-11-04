@@ -197,10 +197,10 @@ button.btn.danger { color: var(--danger); }
       </div>
       <div class="check-row"><span>PBS</span>
         <div class="seg" aria-label="PBS">
-          <label><input type="checkbox" name="pbs" value="青P"><span>青P</span></label>
-          <label><input type="checkbox" name="pbs" value="石P"><span>石P</span></label>
-          <label><input type="checkbox" name="pbs" value="古P"><span>古P</span></label>
-          <label><input type="checkbox" name="pbs" value="岩P"><span>岩P</span></label>
+          <label><input type="checkbox" name="pbs" value="青"><span>青</span></label>
+          <label><input type="checkbox" name="pbs" value="石"><span>石</span></label>
+          <label><input type="checkbox" name="pbs" value="古"><span>古</span></label>
+          <label><input type="checkbox" name="pbs" value="岩"><span>岩</span></label>
         </div>
       </div>
     </section>
@@ -305,7 +305,7 @@ button.btn.danger { color: var(--danger); }
   const FONT = '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif'; // 画像の文字はゴシック体
   const PRESETS = ['#2f6fed', '#e2546b', '#f08a24', '#2a9d6f', '#7b5cd6', '#3a4256'];
   const TSUNAGI = ['宮', '吉', '佐', '矢'];
-  const PBS = ['青P', '石P', '古P', '岩P'];
+  const PBS = ['青', '石', '古', '岩'];
   const TEXT_IDS = ['name', 'kana', 'date', 'age', 'area', 'job', 'family', 'needs', 'character', 'reason', 'other', 'introducer', 'group', 'introAge', 'introArea', 'introJob'];
 
   const state = { color: PRESETS[0], photos: { member: newPhoto(), intro: newPhoto() } };
@@ -557,7 +557,8 @@ button.btn.danger { color: var(--danger); }
   // 高さの上限 maxPh は文字の縮小率に連動させない（内容が多くても写真は小さくしない）
   function hero(L, x, top, w, d, maxPh) {
     const U = L.U, gap = .035 * U;
-    const need = Math.max(chipsWidth(L, TSUNAGI), chipsWidth(L, PBS), .3 * U) * 1.02;
+    // 年齢・職業などが細かく折り返さないよう、右の列は最低でも .44U の幅を残す
+    const need = Math.max(chipsWidth(L, TSUNAGI) * 1.02, chipsWidth(L, PBS) * 1.02, .44 * U);
     const pw = Math.max(.28 * U, Math.min(maxPh / PHOTO_AR, w - gap - need)), ph = pw * PHOTO_AR;
     const tx = x + pw + gap, tw = x + w - tx;
     const ghost = makeL(false, L.s, L.u, L.fam, L.col);
