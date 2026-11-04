@@ -241,12 +241,6 @@ button.btn.danger { color: var(--danger); }
         <label><input type="radio" name="tpl" value="soft"><span>ソフト</span></label>
         <label><input type="radio" name="tpl" value="dark"><span>ダーク</span></label>
       </div>
-      <div class="seg" role="radiogroup" aria-label="画像サイズ">
-        <label><input type="radio" name="size" value="portrait" checked><span>縦 4:5</span></label>
-        <label><input type="radio" name="size" value="square"><span>正方形</span></label>
-        <label><input type="radio" name="size" value="story"><span>ストーリー 9:16</span></label>
-        <label><input type="radio" name="size" value="landscape"><span>横 16:9</span></label>
-      </div>
       <div class="seg" role="radiogroup" aria-label="フォント">
         <label><input type="radio" name="font" value="sans" checked><span>ゴシック</span></label>
         <label><input type="radio" name="font" value="serif"><span>明朝</span></label>
@@ -267,7 +261,7 @@ button.btn.danger { color: var(--danger); }
   </form>
 
   <section class="pane preview-pane" aria-label="プレビュー">
-    <div class="stage"><canvas id="card" width="1080" height="1350" aria-label="プロフィール画像のプレビュー"></canvas></div>
+    <div class="stage"><canvas id="card" width="1080" height="1920" aria-label="プロフィール画像のプレビュー"></canvas></div>
     <p class="hint">入力を変えるとすぐ反映されます。内容がよければ下のボタンで保存、違っていれば入力欄を直してください。</p>
     <div class="actions">
       <button type="button" class="btn primary" id="download">この内容で画像をダウンロード（PNG）</button>
@@ -312,7 +306,7 @@ button.btn.danger { color: var(--danger); }
   const ctx = canvas.getContext('2d');
 
   const PHOTO_AR = 4 / 3; // 写真の縦横比（高さ÷幅）：縦長の四角
-  const SIZES = { portrait: [1080, 1350], square: [1080, 1080], story: [1080, 1920], landscape: [1600, 900] };
+  const W = 1080, H = 1920; // ストーリー（9:16）サイズ
   const FONTS = {
     sans: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',
     serif: '"Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif',
@@ -357,7 +351,7 @@ button.btn.danger { color: var(--danger); }
     const d = {};
     TEXT_IDS.forEach((id) => { d[id] = val(id); });
     d.tsunagi = checks('tsunagi'); d.pbs = checks('pbs');
-    d.tpl = radio('tpl'); d.size = radio('size'); d.font = radio('font');
+    d.tpl = radio('tpl'); d.font = radio('font');
     return d;
   }
 
@@ -590,22 +584,10 @@ button.btn.danger { color: var(--danger); }
     return Math.max(ph, rightH);
   }
 
-  function layout(L, W, H, d, top, bottom) {
+  function layout(L, d, top, bottom) {
     const U = L.U, pad = .065 * L.u;
     const ghost = makeL(false, L.s, L.u, L.fam, L.col);
-    if (W / H > 1.2) { // 横長: 左にメンバーと紹介、右に詳細
-      const lw = W * .5, rx = pad + lw + W * .045, rw = W - pad - rx;
-      const heroH = hero(L, pad, top, lw, d, (bottom - top) * .6);
-      const ip = introPanel({ ...L, draw: false, text: ghost.text }, pad, 0, lw, d);
-      const iy = Math.max(top + heroH + .04 * U, bottom - ip);
-      if (L.draw) {
-        introPanel(L, pad, iy, lw, d);
-        ctx.fillStyle = L.col.line; ctx.fillRect(pad + lw + W * .0225, top, 2, bottom - top);
-      }
-      const secH = sections(L, rx, top, rw, d);
-      return Math.max(heroH + .04 * U + ip, secH);
-    }
-    // 縦長・正方形: 上からメンバー → 詳細 → 紹介パネル
+    // 上からメンバー → 詳細 → 紹介パネル
     const w = W - pad * 2;
     let y = top + hero(L, pad, top, w, d, (bottom - top) * .5);
     const secH = sections(ghost, pad, 0, w, d);
@@ -623,7 +605,6 @@ button.btn.danger { color: var(--danger); }
 
   function render() {
     const d = data();
-    const [W, H] = SIZES[d.size];
     if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
     const u = Math.min(W, H), pad = .065 * u;
     const col = palette(d.tpl, state.color);
@@ -645,9 +626,9 @@ button.btn.danger { color: var(--danger); }
     const top = hh + pad * .75, bottom = H - pad * .9;
     // 収まる最大の文字倍率を探し、余白は上下に均等配分
     let s = 1, need;
-    while ((need = layout(makeL(false, s, u, fam, col), W, H, d, top, bottom)) > bottom - top && s > .5) s -= .03;
-    const off = W / H > 1.2 ? 0 : Math.max(0, (bottom - top - need) / 2);
-    layout(makeL(true, s, u, fam, col), W, H, d, top + off, bottom);
+    while ((need = layout(makeL(false, s, u, fam, col), d, top, bottom)) > bottom - top && s > .5) s -= .03;
+    const off = Math.max(0, (bottom - top - need) / 2);
+    layout(makeL(true, s, u, fam, col), d, top + off, bottom);
     updateDownloadState(d);
   }
 
