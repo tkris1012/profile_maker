@@ -7,7 +7,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Serif+JP:wght@400;700;900&family=Zen+Maru+Gothic:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap">
 <style>
 /* レイアウト: 左に入力フォーム、右にライブプレビュー（スマホはタブ切替） */
 :root {
@@ -241,11 +241,6 @@ button.btn.danger { color: var(--danger); }
         <label><input type="radio" name="tpl" value="soft"><span>ソフト</span></label>
         <label><input type="radio" name="tpl" value="dark"><span>ダーク</span></label>
       </div>
-      <div class="seg" role="radiogroup" aria-label="フォント">
-        <label><input type="radio" name="font" value="sans" checked><span>ゴシック</span></label>
-        <label><input type="radio" name="font" value="serif"><span>明朝</span></label>
-        <label><input type="radio" name="font" value="maru"><span>丸ゴシック</span></label>
-      </div>
       <div class="swatches" id="swatches" aria-label="テーマカラー">
         <input type="color" id="color" value="#2f6fed" aria-label="好きな色を選ぶ">
       </div>
@@ -307,18 +302,14 @@ button.btn.danger { color: var(--danger); }
 
   const PHOTO_AR = 4 / 3; // 写真の縦横比（高さ÷幅）：縦長の四角
   const W = 1080, H = 1920; // ストーリー（9:16）サイズ
-  const FONTS = {
-    sans: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',
-    serif: '"Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif',
-    maru: '"Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif',
-  };
+  const FONT = '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif'; // 画像の文字はゴシック体
   const PRESETS = ['#2f6fed', '#e2546b', '#f08a24', '#2a9d6f', '#7b5cd6', '#3a4256'];
   const TSUNAGI = ['宮', '吉', '佐', '矢'];
   const PBS = ['青P', '石P', '古P', '岩P'];
   const TEXT_IDS = ['name', 'kana', 'date', 'age', 'area', 'job', 'family', 'needs', 'character', 'reason', 'other', 'introducer', 'group', 'introAge', 'introArea', 'introJob'];
 
   const state = { color: PRESETS[0], photos: { member: newPhoto(), intro: newPhoto() } };
-  // orig: 元画像 / rot: 回転（90°単位）/ src: 回転後の画像 / crop: src 上の正方形の切り抜き範囲
+  // orig: 元画像 / rot: 回転（90°単位）/ src: 回転後の画像 / crop: src 上の切り抜き範囲（幅 s、高さ s × PHOTO_AR）
   function newPhoto() { return { orig: null, url: null, rot: 0, src: null, crop: null }; }
 
   // ---------- 色 ----------
@@ -351,7 +342,7 @@ button.btn.danger { color: var(--danger); }
     const d = {};
     TEXT_IDS.forEach((id) => { d[id] = val(id); });
     d.tsunagi = checks('tsunagi'); d.pbs = checks('pbs');
-    d.tpl = radio('tpl'); d.font = radio('font');
+    d.tpl = radio('tpl');
     return d;
   }
 
@@ -608,7 +599,7 @@ button.btn.danger { color: var(--danger); }
     if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
     const u = Math.min(W, H), pad = .065 * u;
     const col = palette(d.tpl, state.color);
-    const fam = FONTS[d.font];
+    const fam = FONT;
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = col.bg; ctx.fillRect(0, 0, W, H);
 
@@ -875,7 +866,7 @@ button.btn.danger { color: var(--danger); }
   setColor(PRESETS[0]);
   render();
   if (document.fonts) {
-    Promise.all(Object.values(FONTS).flatMap((f) => [400, 700, 900].map((w) => document.fonts.load(w + ' 40px ' + f, 'あA'))))
+    Promise.all([400, 700, 900].map((w) => document.fonts.load(w + ' 40px ' + FONT, 'あA')))
       .catch(() => {}).then(render);
     if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', schedule);
   }
