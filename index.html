@@ -256,7 +256,7 @@ button.btn.danger { color: var(--danger); }
   </form>
 
   <section class="pane preview-pane" aria-label="プレビュー">
-    <div class="stage"><canvas id="card" width="1080" height="1920" aria-label="プロフィール画像のプレビュー"></canvas></div>
+    <div class="stage"><canvas id="card" width="1080" height="1350" aria-label="プロフィール画像のプレビュー"></canvas></div>
     <p class="hint">入力を変えるとすぐ反映されます。内容がよければ下のボタンで保存、違っていれば入力欄を直してください。</p>
     <div class="actions">
       <button type="button" class="btn primary" id="download">この内容で画像をダウンロード（PNG）</button>
@@ -301,7 +301,7 @@ button.btn.danger { color: var(--danger); }
   const ctx = canvas.getContext('2d');
 
   const PHOTO_AR = 4 / 3; // 写真の縦横比（高さ÷幅）：縦長の四角
-  const W = 1080, H = 1920; // ストーリー（9:16）サイズ
+  const W = 1080; // 画像の幅。高さは内容の量に合わせて自動で決める
   const FONT = '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif'; // 画像の文字はゴシック体
   const PRESETS = ['#2f6fed', '#e2546b', '#f08a24', '#2a9d6f', '#7b5cd6', '#3a4256'];
   const TSUNAGI = ['宮', '吉', '佐', '矢'];
@@ -575,12 +575,12 @@ button.btn.danger { color: var(--danger); }
     return Math.max(ph, rightH);
   }
 
-  function layout(L, d, top, bottom) {
+  function layout(L, d, top) {
     const U = L.U, pad = .065 * L.u;
     const ghost = makeL(false, L.s, L.u, L.fam, L.col);
     // 上からメンバー → 詳細 → 紹介パネル
     const w = W - pad * 2;
-    let y = top + hero(L, pad, top, w, d, (bottom - top) * .5);
+    let y = top + hero(L, pad, top, w, d, W * .75);
     const secH = sections(ghost, pad, 0, w, d);
     if (secH) {
       y += .04 * U;
@@ -596,15 +596,18 @@ button.btn.danger { color: var(--danger); }
 
   function render() {
     const d = data();
-    if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
-    const u = Math.min(W, H), pad = .065 * u;
+    const u = W, pad = .065 * u;
     const col = palette(d.tpl, state.color);
     const fam = FONT;
+    const hh = .1 * u, top = hh + pad * .75;
+    // 文字は縮めずに中身の高さを測り、画像の高さをそれに合わせる
+    const H = Math.ceil(top + layout(makeL(false, 1, u, fam, col), d, top) + pad * .9);
+    if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = col.bg; ctx.fillRect(0, 0, W, H);
 
     // ヘッダー帯
-    const hh = .1 * u, fg = onColor(col.header);
+    const fg = onColor(col.header);
     ctx.fillStyle = col.header; ctx.fillRect(0, 0, W, hh);
     const HL = makeL(true, 1, u, fam, col);
     HL.text(pad, hh / 2 - .021 * u, W / 2, 'MEMBER PROFILE', .028, 900, fg, 1.5, 'left', .2);
@@ -614,12 +617,7 @@ button.btn.danger { color: var(--danger); }
       ctx.globalAlpha = 1;
     }
 
-    const top = hh + pad * .75, bottom = H - pad * .9;
-    // 収まる最大の文字倍率を探し、余白は上下に均等配分
-    let s = 1, need;
-    while ((need = layout(makeL(false, s, u, fam, col), d, top, bottom)) > bottom - top && s > .5) s -= .03;
-    const off = Math.max(0, (bottom - top - need) / 2);
-    layout(makeL(true, s, u, fam, col), d, top + off, bottom);
+    layout(makeL(true, 1, u, fam, col), d, top);
     updateDownloadState(d);
   }
 
